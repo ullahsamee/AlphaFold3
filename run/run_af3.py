@@ -506,25 +506,29 @@ def main(args_dict: Dict[str, Any]) -> None:
             ' set to true.'
         )
 
-    if args_dict["input_dir"] is not None:
-        fold_inputs = load_fold_inputs_from_dir(
-            pathlib.Path(args_dict["input_dir"])
-        )
-    elif args_dict["json_path"] is not None:
-        fold_inputs = load_fold_inputs_from_path(
-            pathlib.Path(args_dict["json_path"])
-        )
-    else:
-        raise AssertionError(
-            'Exactly one of --json_path or --input_dir must be specified.'
-        )
-
     # Make sure we can create the output directory before running anything.
     try:
       os.makedirs(args_dict["output_dir"], exist_ok=True)
     except OSError as e:
       print(f'Failed to create output directory {args_dict["output_dir"]}: {e}')
       raise
+
+    if args_dict["input_dir"] is not None:
+        fold_inputs = load_fold_inputs_from_dir(
+            pathlib.Path(args_dict["input_dir"]),
+            run_mmseqs=args_dict["run_mmseqs"],
+            output_dir=args_dict["output_dir"]
+        )
+    elif args_dict["json_path"] is not None:
+        fold_inputs = load_fold_inputs_from_path(
+            pathlib.Path(args_dict["json_path"]),
+            run_mmseqs=args_dict["run_mmseqs"],
+            output_dir=args_dict["output_dir"]
+        )
+    else:
+        raise AssertionError(
+            'Exactly one of --json_path or --input_dir must be specified.'
+        )
 
     if args_dict["run_inference"]:
         # Fail early on incompatible devices, but only if we're running inference.
@@ -551,7 +555,8 @@ def main(args_dict: Dict[str, Any]) -> None:
     print('\n'.join(notice))
 
     if args_dict["run_data_pipeline"]:
-        # TODO: I think we can skip this since we plan on using ColabFold MMseqs2 server?
+        # We skip this (by setting run_data_pipeline=False) since we handle MSAs
+        # and templates differently.
         expand_path = lambda x: replace_db_dir(x, DB_DIR.value)
         data_pipeline_config = pipeline.DataPipelineConfig(
             jackhmmer_binary_path=_JACKHMMER_BINARY_PATH.value,
