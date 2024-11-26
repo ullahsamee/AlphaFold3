@@ -4,6 +4,7 @@
 from collections.abc import Callable, Iterable, Sequence
 import csv
 import dataclasses
+import datetime
 import functools
 import multiprocessing
 import os
@@ -446,6 +447,16 @@ def process_fold_input(
     if not fold_input.chains:
         raise ValueError('Fold input has no chains.')
 
+    if os.path.exists(output_dir) and os.listdir(output_dir):
+        new_output_dir = (
+            f'{output_dir}_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        )
+        print(
+            f'Output directory {output_dir} exists and non-empty, using instead '
+            f' {new_output_dir}.'
+        )
+        output_dir = new_output_dir
+
     if model_runner is not None:
         # If we're running inference, check we can load the model parameters before
         # (possibly) launching the data pipeline.
@@ -517,13 +528,15 @@ def main(args_dict: Dict[str, Any]) -> None:
         fold_inputs = load_fold_inputs_from_dir(
             pathlib.Path(args_dict["input_dir"]),
             run_mmseqs=args_dict["run_mmseqs"],
-            output_dir=args_dict["output_dir"]
+            output_dir=args_dict["output_dir"],
+            max_template_date=args_dict["max_template_date"]
         )
     elif args_dict["json_path"] is not None:
         fold_inputs = load_fold_inputs_from_path(
             pathlib.Path(args_dict["json_path"]),
             run_mmseqs=args_dict["run_mmseqs"],
-            output_dir=args_dict["output_dir"]
+            output_dir=args_dict["output_dir"],
+            max_template_date=args_dict["max_template_date"]
         )
     else:
         raise AssertionError(
